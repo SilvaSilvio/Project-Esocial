@@ -541,43 +541,51 @@ def import_esocial(conn, file_path):
     except Exception as e:
         print(f"Erro ao importar dados do arquivo {file_path}: {str(e)}")
 
-def main():
-    try:
-        # Define os nomes dos arquivos diretamente
-        depara_eventos_file = "depara_eventos_esocial.csv"
-        depara_file = "DEPARA.xlsx"
-        ficha_financeira_file = "Ficha Financeira.CSV"
-        esocial_file = "esocial.xlsx"
-        
-        # Verifica se os arquivos existem
-        for file_path in [depara_eventos_file, depara_file, ficha_financeira_file, esocial_file]:
-            if not os.path.exists(file_path):
-                print(f"Erro: Arquivo não encontrado: {file_path}")
-                return
-        
-        print("=== Iniciando importação de dados ===")
-        print(f"Arquivo Depara Eventos: {depara_eventos_file}")
-        print(f"Arquivo Depara: {depara_file}")
-        print(f"Arquivo Ficha Financeira: {ficha_financeira_file}")
-        print(f"Arquivo eSocial: {esocial_file}")
-        
-        # Cria o banco de dados
-        conn = create_database()
-        if conn is None:
+def main(ficha_financeira_path=None, esocial_path=None):
+    """
+    Função principal que importa todos os dados
+    """
+    # Caminhos dos arquivos depara (fixos)
+    depara_eventos_file = "depara_eventos_esocial.csv"
+    depara_file = "depara.xlsx"
+    
+    # Verifica se os arquivos depara existem
+    for file_path in [depara_eventos_file, depara_file]:
+        if not os.path.exists(file_path):
+            print(f"Erro: Arquivo não encontrado: {file_path}")
             return
-        
-        # Importa os dados
-        import_depara_eventos(conn, depara_eventos_file)
-        import_depara(conn, depara_file)
-        import_ficha_financeira(conn, ficha_financeira_file)
-        import_esocial(conn, esocial_file)
-        
-        # Fecha a conexão com o banco de dados
-        conn.close()
-        print("\nImportação concluída com sucesso!")
-        
-    except Exception as e:
-        print(f"\nErro durante a importação: {str(e)}")
+    
+    # Verifica se os caminhos dos arquivos principais foram fornecidos
+    if not ficha_financeira_path or not esocial_path:
+        print("Erro: Caminhos dos arquivos Ficha Financeira e eSocial não fornecidos")
+        return
+    
+    # Verifica se os arquivos principais existem
+    for file_path in [ficha_financeira_path, esocial_path]:
+        if not os.path.exists(file_path):
+            print(f"Erro: Arquivo não encontrado: {file_path}")
+            return
+    
+    print("=== Iniciando importação de dados ===")
+    print(f"Arquivo Depara Eventos: {depara_eventos_file}")
+    print(f"Arquivo Depara: {depara_file}")
+    print(f"Arquivo Ficha Financeira: {ficha_financeira_path}")
+    print(f"Arquivo eSocial: {esocial_path}")
+    
+    # Cria o banco de dados
+    conn = create_database()
+    if conn is None:
+        return
+    
+    # Importa os dados
+    import_depara_eventos(conn, depara_eventos_file)
+    import_depara(conn, depara_file)
+    import_ficha_financeira(conn, ficha_financeira_path)
+    import_esocial(conn, esocial_path)
+    
+    # Fecha a conexão com o banco de dados
+    conn.close()
+    print("\nImportação concluída com sucesso!")
 
 if __name__ == "__main__":
     main() 

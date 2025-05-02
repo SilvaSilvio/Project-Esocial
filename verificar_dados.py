@@ -68,7 +68,7 @@ def consultar_dados_join():
         
         print_with_timestamp("\n=== Executando Consultas com JOIN ===")
         
-        # Consulta 1: Comparação detalhada entre ficha_financeira, depara e esocial
+        '''# Consulta 1: Comparação detalhada entre ficha_financeira, depara e esocial
         query1 = """
         SELECT 
             ff.codigo_empresa,
@@ -97,6 +97,7 @@ def consultar_dados_join():
         WHERE ff.valor != 0
         ORDER BY ff.matricula, ff.codigo_evento
         """
+        '''
         
         # Consulta 2: Valor agrupado por Código Esocial com totais
         query2 = """
@@ -111,8 +112,8 @@ def consultar_dados_join():
             SUM(CASE WHEN ff.tipo_evento = 'Provento' THEN ff.valor ELSE 0 END) as total_proventos,
             SUM(CASE WHEN ff.tipo_evento = 'Desconto' THEN ff.valor ELSE 0 END) as total_descontos,
             SUM(CASE WHEN ff.tipo_evento = 'Resultado' THEN ff.valor ELSE 0 END) as total_Resultado,
-            
-            ABS( (SUM(CASE WHEN ff.tipo_evento = 'Provento' THEN ff.valor ELSE 0 END) - SUM(CASE WHEN ff.tipo_evento = 'Desconto' THEN ff.valor ELSE 0 END) ) ) as valor_liquido,
+            ROUND(ABS(SUM(CASE WHEN ff.tipo_evento = 'Provento' THEN ff.valor ELSE 0 END) -
+                 SUM(CASE WHEN ff.tipo_evento = 'Desconto' THEN ff.valor ELSE 0 END)), 2) as valor_liquido,
             (
             select
                     es.valor
@@ -122,7 +123,9 @@ def consultar_dados_join():
             
             ) AS VALOR_ESOCIAL,
 
-            ( ABS( (SUM(CASE WHEN ff.tipo_evento = 'Provento' THEN ff.valor ELSE 0 END) - SUM(CASE WHEN ff.tipo_evento = 'Desconto' THEN ff.valor ELSE 0 END) ) )
+            (round( abs(( SUM(CASE WHEN ff.tipo_evento = 'Provento' THEN ff.valor ELSE 0 END)
+            - SUM(CASE WHEN ff.tipo_evento = 'Desconto' THEN ff.valor ELSE 0 END)
+            ) ), 2)
             -
             (
             select
@@ -160,30 +163,31 @@ def consultar_dados_join():
             SUM(CASE WHEN ff.tipo_evento = 'Provento' THEN ff.valor ELSE 0 END) as total_proventos,
             SUM(CASE WHEN ff.tipo_evento = 'Desconto' THEN ff.valor ELSE 0 END) as total_descontos,
             SUM(CASE WHEN ff.tipo_evento = 'Resultado' THEN ff.valor ELSE 0 END) as total_Resultado,
-           abs(( SUM(CASE WHEN ff.tipo_evento = 'Provento' THEN ff.valor ELSE 0 END)
+           round( abs(( SUM(CASE WHEN ff.tipo_evento = 'Provento' THEN ff.valor ELSE 0 END)
             - SUM(CASE WHEN ff.tipo_evento = 'Desconto' THEN ff.valor ELSE 0 END)
-            ) )          
+            ) ), 2)          
                 as valor_liquido,
-            (SELECT sum( esocial.valor)
+            round((SELECT sum( esocial.valor)
              FROM esocial esocial
              WHERE esocial.matricula = ff.matricula
              AND esocial.descricao_completa = dpeve.depara_esocial
-             ) as valor_esocial,
+             ), 2 ) as valor_esocial,
              
-            (abs(( SUM(CASE WHEN ff.tipo_evento = 'Provento' THEN ff.valor ELSE 0 END)
+            (round( abs(( SUM(CASE WHEN ff.tipo_evento = 'Provento' THEN ff.valor ELSE 0 END)
             - SUM(CASE WHEN ff.tipo_evento = 'Desconto' THEN ff.valor ELSE 0 END)
-            ) )          
+            ) ), 2)          
             -
-            (SELECT sum( esocial.valor)
+            round((SELECT sum( esocial.valor)
              FROM esocial esocial
              WHERE esocial.matricula = ff.matricula
              AND esocial.descricao_completa = dpeve.depara_esocial
-             )) as Resultado_Final
+             ), 2 ) ) as Resultado_Final
              
         FROM ficha_financeira ff
         LEFT JOIN depara dp ON ff.codigo_evento = dp.codigo_evento
         LEFT JOIN depara_eventos dpeve ON ff.codigo_evento = dpeve.codigo
         WHERE ff.valor != 0
+
         GROUP BY
             ff.codigo_empresa,
             ff.empresa,
@@ -233,9 +237,9 @@ def consultar_dados_join():
         """
         
         # Executa as consultas e converte para DataFrames
-        print_with_timestamp("Executando consulta 1...")
-        df1 = pd.read_sql_query(query1, conn)
-        print_with_timestamp(f"Consulta 1 concluída. Total de registros: {len(df1)}")
+        #print_with_timestamp("Executando consulta 1...")
+        #df1 = pd.read_sql_query(query1, conn)
+        #print_with_timestamp(f"Consulta 1 concluída. Total de registros: {len(df1)}")
         
         print_with_timestamp("Executando consulta 2...")
         df2 = pd.read_sql_query(query2, conn)
@@ -258,7 +262,7 @@ def consultar_dados_join():
         # Salva os resultados em uma planilha Excel com múltiplas abas
         with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
             # Aba 1: Comparação Detalhada
-            df1.to_excel(writer, sheet_name='Comparação Detalhada', index=False)
+            #df1.to_excel(writer, sheet_name='Comparação Detalhada', index=False)
             
             # Aba 2: Agrupado por Código Esocial
             df2.to_excel(writer, sheet_name='Agrupado por Código Esocial', index=False)
@@ -274,9 +278,9 @@ def consultar_dados_join():
                 worksheet = writer.sheets[sheet_name]
                 df_to_use = None
                 
-                if sheet_name == 'Comparação Detalhada':
-                    df_to_use = df1
-                elif sheet_name == 'Agrupado por Código Esocial':
+                #if sheet_name == 'Comparação Detalhada':
+                #    df_to_use = df1
+                if sheet_name == 'Agrupado por Código Esocial':
                     df_to_use = df2
                 elif sheet_name == 'Agrupado por Descr. Esocial':
                     df_to_use = df3
